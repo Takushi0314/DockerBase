@@ -1,0 +1,77 @@
+version: '3'
+services:
+  nginx:
+    container_name: nginx
+    image: nginx
+    ports:
+      - 80:80
+    volumes:
+      - /var/docker/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - openproject
+      - jenkins
+      - pgadmin4
+
+  jenkins:
+    container_name: jenkins
+    image: jenkins
+    volumes:
+      - /var/docker/jenkins:/var/jenkins_home
+    environment:
+      - JENKINS_OPTS=--prefix=/jenkins
+
+  openproject:
+    container_name: openproject
+    image: openproject/community:latest
+    volumes:
+      - /var/docker/openproject/static:/var/db/openproject
+      - /var/docker/openproject/logs:/var/log/supervisor
+      - /var/docker/openproject/pgdata:/var/lib/postgresql/9.6/main
+      - /var/docker/openproject/config/configuration.yml:/app/config/configuration.yml
+      - /var/docker/openproject/config/config.ru:/app/config.ru
+    environment:
+      - SECRET_KEY_BASE=secret      
+      - EMAIL_DELIVERY_METHOD="smtp"
+      - SMTP_ADDRESS="smtp.mailgun.org"
+      - SMTP_PORT="587"
+      - SMTP_DOMAIN="myDomain.com"
+      - SMTP_AUTHENTICATION="plain"
+      - SMTP_USER_NAME="postmaster@myDomain.com"
+      - SMTP_PASSWORD="MyPassword"
+      - SMTP_ENABLE_STARTTLS_AUTO="true"
+
+  plantuml:
+    container_name: plantuml
+    image: plantuml/plantuml-server:latest
+    ports:
+     - 8082:8080
+    restart: always
+
+  swagger-editor:
+    container_name: swagger-editor
+    image: swaggerapi/swagger-editor
+    ports:
+      - 8083:8080
+    restart: always
+
+  swagger-ui:
+    container_name: swagger-ui
+    image: swaggerapi/swagger-ui
+    ports:
+     - 8084:8080
+    restart: always
+
+  pgadmin4:
+    container_name: pgadmin4
+    image: dpage/pgadmin4
+    volumes:
+      - /var/docker/pgadmin:/var/lib/pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: root
+      PGADMIN_DEFAULT_PASSWORD: root
+    restart: always
+
+networks:
+    default:
+        external:
+            name: shared
