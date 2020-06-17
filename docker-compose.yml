@@ -1,8 +1,10 @@
 version: '3'
 services:
+
   nginx:
     container_name: nginx
     image: nginx
+    hostname: nginx
     ports:
       - 80:80
     volumes:
@@ -14,24 +16,79 @@ services:
       - swagger-editor
       - swagger-ui
       - plantuml
+    environment:
+      TZ: Asia/Tokyo
+
+  pgadmin4:
+    container_name: pgadmin4
+    image: dpage/pgadmin4
+    hostname: pgadmin4
+    ports:
+      - 8001:80
+    volumes:
+      - /var/docker/pgadmin:/var/lib/pgadmin
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      TZ: Asia/Tokyo
+      PGADMIN_DEFAULT_EMAIL: root
+      PGADMIN_DEFAULT_PASSWORD: root
 
   jenkins:
     container_name: jenkins
-    image: jenkins
+    image: jenkins/jenkins:lts
+    ports:
+      - 8002:8080
     volumes:
       - /var/docker/jenkins:/var/jenkins_home
+      - /etc/localtime:/etc/localtime:ro
     environment:
-      - JENKINS_OPTS=--prefix=/jenkins
+      TZ: Asia/Tokyo
+      # JENKINS_OPTS=--prefix=/jenkins # thrgout nginx
+    hostname: jenkins
+
+  plantuml:
+    container_name: plantuml
+    image: plantuml/plantuml-server:latest
+    hostname: plantuml-server
+    ports:
+      - 8003:8080
+    volumes:
+      - /var/docker/plantuml/docker-entrypoint-custom.sh:/docker-entrypoint-custom.sh
+      - /etc/localtime:/etc/localtime:ro
+    entrypoint: "/bin/bash /docker-entrypoint-custom.sh"
+    environment:
+      TZ: Asia/Tokyo
+
+  swagger-editor:
+    container_name: swagger-editor
+    image: swaggerapi/swagger-editor
+    hostname: swagger-editor
+    ports:
+      - 8004:8080
+    environment:
+      TZ: Asia/Tokyo
+
+  swagger-ui:
+    container_name: swagger-ui
+    image: swaggerapi/swagger-ui
+    hostname: swagger-ui
+    ports:
+      - 8005:8080
+    environment:
+      TZ: Asia/Tokyo
 
   openproject:
     container_name: openproject
     image: openproject/community:latest
+    hostname: openproject
+    ports:
+      - 8006:80
     volumes:
       - /var/docker/openproject/static:/var/db/openproject
       - /var/docker/openproject/logs:/var/log/supervisor
       - /var/docker/openproject/pgdata:/var/lib/postgresql/9.6/main
-      - /var/docker/openproject/config/configuration.yml:/app/config/configuration.yml
-      - /var/docker/openproject/config/config.ru:/app/config.ru
+      # - /var/docker/openproject/config/configuration.yml:/app/config/configuration.yml
+      # - /var/docker/openproject/config/config.ru:/app/config.ru
     environment:
       - SECRET_KEY_BASE=secret      
       - EMAIL_DELIVERY_METHOD="smtp"
@@ -42,30 +99,33 @@ services:
       - SMTP_USER_NAME="postmaster@myDomain.com"
       - SMTP_PASSWORD="MyPassword"
       - SMTP_ENABLE_STARTTLS_AUTO="true"
-
-  plantuml:
-    container_name: plantuml
-    image: plantuml/plantuml-server:latest
-    volumes:
-      - /var/docker/plantuml/docker-entrypoint-custom.sh:/docker-entrypoint-custom.sh
-    entrypoint: "/bin/bash /docker-entrypoint-custom.sh"
-
-  swagger-editor:
-    container_name: swagger-editor
-    image: swaggerapi/swagger-editor
-
-  swagger-ui:
-    container_name: swagger-ui
-    image: swaggerapi/swagger-ui
-
-  pgadmin4:
-    container_name: pgadmin4
-    image: dpage/pgadmin4
-    volumes:
-      - /var/docker/pgadmin:/var/lib/pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: root
-      PGADMIN_DEFAULT_PASSWORD: root
+      TZ: Asia/Tokyo
+
+  gogs:
+    container_name: gogs
+    image: gogs/gogs:latest
+    ports:
+      - 8007:3000
+      - "8008:22"
+    volumes:
+      - /var/docker/gogs/data:/data
+    environment:
+      - RUN_CROND=true
+    depends_on:
+      - gogs-db
+
+  gogs-db:
+      container_name: gogs-db
+      image: mysql:5.7
+      environment:
+        - MYSQL_ALLOW_EMPTY_PASSWORD=gogogos
+        - MYSQL_ROOT_PASSWORD=gogs
+        - MYSQL_DATABASE=gogs
+      volumes:
+        - /var/docker/gogs/mysql:/var/lib/mysql
+
+
 
 networks:
     default:
